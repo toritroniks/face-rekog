@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  Env:
+    Type: String
+    Default: dev
+  Timeout:
+    Type: Number
+    Default: 60
+
+Resources:
+  FaceRekogRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: "face-rekog-policy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action: "*"
+                Resource: "*"
+
+  # FaceRekogApi:
+  #   Type: AWS::Serverless::Api
+  #   Properties:
+  #     StageName: !Ref Env
+  #     DefinitionBody:
+  #       swagger: "2.0"
+  #       info:
+  #         title:
+  #           Fn::Sub: ${Env}-face-rekog-api
+  #       schemes:
+  #         - https
+  #       basePath:
+  #         Fn::Sub: /${Env}
+  #       paths:
+  #         /:
+  #           post:
+  #             responses: {}
+  #             produces:
+  #               - "application/json"
+  #             x-amazon-apigateway-integration:
+  #               uri:
+  #                 Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FaceRekogFunction.Arn}/invocations
+  #               passthroughBehavior: "when_no_match"
+  #               httpMethod: "POST"
+  #               type: "aws_proxy"
+  #     MethodSettings:
+  #       - DataTraceEnabled: true
+  #         LoggingLevel: "INFO"
+  #         ResourcePath: "/*"
+  #         HttpMethod: "*"
+
+  FaceRekogFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: ${Env}-face-rekog-lambda
+      CodeUri: face_rekog/
+      Handler: face_rekog.lambda_handler
+      Runtime: python3.6
+      Timeout: !Ref Timeout
+      Role:
+        Fn::GetAtt:
+          - "FaceRekogRole"
+          - "Arn"
+      Events:
+        FaceRekogPost:
+          Type: Api
+          Properties:
+            Path: /
+            Method: post
+        FaceRekogOptions:
+          Type: Api
+          Properties:
+            Path: /
+            Method: options
+            # RestApiId: !Ref FaceRekogApi

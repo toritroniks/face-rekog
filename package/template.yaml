@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Parameters:
+  Env:
+    Type: String
+    Default: dev
+  Timeout:
+    Type: Number
+    Default: 60
+Resources:
+  FaceRekogRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName: face-rekog-policy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action: '*'
+            Resource: '*'
+  FaceRekogFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: ${Env}-face-rekog-lambda
+      CodeUri: s3://face-rekog-repository/package/73c2623de0b542935e23abcbfbdbae35
+      Handler: face_rekog.lambda_handler
+      Runtime: python3.6
+      Timeout:
+        Ref: Timeout
+      Role:
+        Fn::GetAtt:
+        - FaceRekogRole
+        - Arn
+      Events:
+        FaceRekogPost:
+          Type: Api
+          Properties:
+            Path: /
+            Method: post
+        FaceRekogOptions:
+          Type: Api
+          Properties:
+            Path: /
+            Method: options
